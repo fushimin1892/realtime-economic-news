@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>世界ニュース速報 — リアルタイム経済ニュースボード</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://s3.tradingview.com 'sha256-yr95MwySUb4ICjHf0STNoRvzfArzm+2xaO2D0ozR1p0='; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self'; connect-src 'self' https://api.mymemory.translated.net https://translate.googleapis.com https://*.workers.dev; frame-src https://*.tradingview.com https://*.tradingview-widget.com; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests;">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta name="robots" content="index, follow">
+<meta name="description" content="NHK・Financial Times・Bloomberg・ITmediaなど約34の投資/金融専門ソースを集約表示するリアルタイム経済ニュースボード。株価・為替・AI・企業関連ニュースを自動翻訳・トピック絞込・簡易センチメント判定つきで表示します。">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="世界ニュース速報">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:title" content="世界ニュース速報 — リアルタイム経済ニュースボード">
+<meta property="og:description" content="約34の投資/金融専門ソースを集約表示するリアルタイム経済ニュースボード。">
+<meta property="og:image" content="./icons/icon-512.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:image:alt" content="世界ニュース速報のアプリアイコン">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="世界ニュース速報 — リアルタイム経済ニュースボード">
+<meta name="twitter:description" content="約34の投資/金融専門ソースを集約表示するリアルタイム経済ニュースボード。">
+<meta name="twitter:image" content="./icons/icon-512.png">
+<script src="js/theme-init.js?v=2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=54">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0a0d18" id="themeColorMeta">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"世界ニュース速報 — リアルタイム経済ニュースボード","alternateName":"世界ニュース速報","description":"NHK・Financial Times・Bloomberg・ITmediaなど約34の投資/金融専門ソースを集約表示するリアルタイム経済ニュースボード。株価・為替・AI・企業関連ニュースを自動翻訳・トピック絞込・簡易センチメント判定つきで表示します。","inLanguage":"ja","publisher":{"@type":"Organization","name":"世界ニュース速報"}}</script>
+</head>
+<body>
+
+<a class="skip-link" href="#grid">ニュース一覧へスキップ</a>
+
+<div id="scaleWrap">
+<header>
+  <div class="masthead">
+    <h1>世界ニュース速報<span class="sub">REAL-TIME MULTI-SOURCE NEWS BOARD</span></h1>
+    <div class="statusbar" id="statusbar">
+      <span class="status-info">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="statusText" role="status" aria-live="polite">読み込み中…</span>
+      </span>
+      <div class="status-actions">
+        <button id="topicBtn" title="株価・AI・企業など金融/ビジネス関連キーワードを含む記事だけに絞り込みます" aria-pressed="true">トピック絞込 ON</button>
+        <button id="trBtn" title="英語記事の見出し・要約を日本語へ自動翻訳します" aria-pressed="true">翻訳 ON</button>
+        <button id="themeBtn" title="ダークモードとライトモードを切り替えます">ライト表示</button>
+        <button id="refreshBtn">今すぐ更新 ⟳</button>
+      </div>
+    </div>
+  </div>
+  <div class="tape" id="tape" aria-label="相場ティッカー(為替・株価指数・商品の自動更新表示)"></div>
+
+  <div class="sessions" aria-label="世界の取引セッション">
+    <div class="cap"><h2>WORLD TRADING SESSIONS ─ 日本時間 24H</h2><span></span></div>
+    <div class="sess-track" id="sessTrack"></div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="chips" id="chips" role="group" aria-label="配信元フィルター"></div>
+  <div class="search-row">
+    <div class="searchwrap"><input id="search" type="text" placeholder="キーワードで絞り込み…" aria-label="キーワードで絞り込み"></div>
+    <select id="genreSelect" class="genre-select" aria-label="ジャンルで絞り込み" title="株価・戦争・半導体などジャンルで記事を絞り込みます"></select>
+  </div>
+</div>
+
+<main>
+  <aside class="watchlist" aria-label="株価現在値・銘柄検索">
+    <div class="cap"><h2>STOCK QUOTE ─ 銘柄検索・現在値</h2><button id="wlBtn">折りたたむ ▲</button></div>
+    <div class="wl-searchwrap">
+      <input id="wlSearch" type="text" placeholder="銘柄名で検索(例: Apple, トヨタ)…" aria-label="銘柄名で検索" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="wlResults">
+      <div class="wl-results" id="wlResults" role="listbox" hidden></div>
+    </div>
+    <div class="wl-widget" id="wlWidget"></div>
+    <div class="wl-pinned" id="wlPinned" aria-label="ピン留め銘柄"></div>
+  </aside>
+  <h2 class="sr-only">最新ニュース一覧</h2>
+  <div class="grid" id="grid"><div class="loading">ニュースを取得しています…</div></div>
+  <aside class="calendar" aria-label="経済指標カレンダー">
+    <div class="cap"><h2>ECONOMIC CALENDAR ─ 経済指標</h2><button id="calBtn">折りたたむ ▲</button></div>
+    <div class="cal-tools">
+      <button id="calImpBtn" title="★★★のみ(米雇用統計・CPI・政策金利クラスだけ)と★★以上の表示を切り替えます">重要度: ★★以上</button>
+      <span class="cal-note">棒アイコンの数 = 重要度</span>
+    </div>
+    <div class="cal-widget" id="calWidget"></div>
+  </aside>
+</main>
+
+<footer>
+  <div class="rule">
+    <div class="links" id="footLinks"><a href="privacy.html">プライバシーポリシー</a></div>
+    見出し・要約は各配信元の公開RSSフィードから取得し、原文へのリンクを付しています。株価・AI・企業関連など投資/金融/政治/軍事系キーワードを含む記事のみに絞り込む表示になっています(ヘッダーの「トピック絞込」でOFFにできます)。英語記事の日本語表示は <a href="https://mymemory.translated.net/" target="_blank" rel="noopener noreferrer">MyMemory</a>(利用不可時はGoogle翻訳)による機械翻訳のため、正確な内容は必ず原文をご確認ください。緑▲/赤▼は見出し・要約中の頻出語による簡易センチメント判定、NEWバッジは公開から60分以内の記事の目印です(いずれも簡易的な自動判定のため参考情報としてご利用ください)。本ボードは情報提供のみを目的とし、投資勧誘・助言を目的とするものではありません。取引・投資判断はご自身の責任で行ってください。相場ティッカーは <a href="https://jp.tradingview.com/" target="_blank" rel="noopener noreferrer">TradingView</a> 提供。
+  </div>
+</footer>
+</div>
+
+<script src="js/scale.js?v=4"></script>
+<script src="js/sources.js?v=12"></script>
+<script src="js/topic-keywords.js?v=4"></script>
+<script src="js/sentiment-keywords.js?v=4"></script>
+<script src="js/genre-keywords.js?v=1"></script>
+<script src="js/market-sessions.js?v=3"></script>
+<script src="js/utils.js?v=9"></script>
+<script src="js/theme.js?v=11"></script>
+<script src="js/feed.js?v=8"></script>
+<script src="js/translate.js?v=11"></script>
+<script src="js/topic-filter.js?v=6"></script>
+<script src="js/genre-filter.js?v=1"></script>
+<script src="js/sentiment.js?v=6"></script>
+<script src="js/render.js?v=9"></script>
+<script src="js/ticker.js?v=3"></script>
+<script src="js/sessions.js?v=3"></script>
+<script src="js/calendar.js?v=13"></script>
+<script src="js/watchlist.js?v=19"></script>
+<script src="js/health.js?v=1"></script>
+<script src="js/main.js?v=13"></script>
+</body>
+</html>

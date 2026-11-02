@@ -1,0 +1,16 @@
+{
+  "name": "世界ニュース速報 — リアルタイム経済ニュースボード",
+  "short_name": "ニュース速報",
+  "description": "約34の投資/金融専門ソースを集約表示するリアルタイム経済ニュースボード",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0d18",
+  "theme_color": "#0a0d18",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

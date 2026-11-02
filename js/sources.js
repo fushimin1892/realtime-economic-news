@@ -1,0 +1,369 @@
+'use strict';
+
+
+
+const SOURCES = [
+  {
+    "id": "seekingalpha",
+    "group": "seekingalpha",
+    "name": "Seeking Alpha(Breaking News)",
+    "short": "Seeking Alpha",
+    "home": "https://seekingalpha.com/",
+    "rss": "https://seekingalpha.com/market_currents.xml",
+    "lang": "EN",
+    "color": "#e0766a",
+    "note": "市場速報(market currents)フィード。bot対策が厳しめのサイトのため、Actions側で恒常的にFAILする場合は撤去する"
+  },
+  {
+    "id": "bloomberg-jp",
+    "group": "bloomberg-jp",
+    "name": "Bloomberg.com(日本語版)",
+    "short": "Bloomberg",
+    "home": "https://www.bloomberg.com/jp",
+    "rss": "https://news.google.com/rss/search?q=site:bloomberg.co.jp+OR+site:bloomberg.com/jp&hl=ja&gl=JP&ceid=JP:ja",
+    "lang": "JA",
+    "color": "#e8a33d",
+    "note": "Bloomberg公式サイト(bloomberg.com/jp/economics・bloomberg.com/jp/latest等)は強力なボット検知(PerimeterX等)により、Actions側からの直接アクセスはHTTP 403『Are you a robot?』で一律拒否されることを実測で確認済み(スクレイピングは技術的に不可能かつBloomberg側の意思に反するため実施しない)。代わりに、認証不要かつGoogleが公式に公開しているニュース検索RSS(site:検索)経由でbloomberg.co.jp/bloomberg.com配下の記事一覧を取得している。これはBloomberg側のボット対策を回避する行為ではなく、Google News自体が提供する正規のRSS機能を利用しているだけであり、多くのニュースアグリゲーターで使われる一般的な手法。件数の都合上、economicsとlatestを別々のソースには分けず、Bloomberg Japan関連記事をまとめて1つのソースとして取得し、既存のトピック絞込で関連記事に絞り込む。リンク先はGoogle NewsのリダイレクトURL(news.google.com)経由でBloomberg記事本文へ到達する形になる(他ソースのような配信元への直接リンクではない点に注意)"
+  },
+  {
+    "id": "nhk-eco",
+    "group": "nhk",
+    "sub": "経済",
+    "name": "NHKニュース(経済)",
+    "short": "NHK",
+    "home": "https://news.web.nhk/newsweb",
+    "rss": "https://news.web.nhk/n-data/conf/na/rss/cat5.xml",
+    "lang": "JA",
+    "color": "#6fa8dc"
+  },
+  {
+    "id": "nhk-gen",
+    "group": "nhk",
+    "sub": "総合",
+    "name": "NHKニュース(主要)",
+    "short": "NHK",
+    "home": "https://news.web.nhk/newsweb",
+    "rss": "https://news.web.nhk/n-data/conf/na/rss/cat0.xml",
+    "lang": "JA",
+    "color": "#6fa8dc"
+  },
+  {
+    "id": "ft",
+    "group": "ft",
+    "name": "Financial Times(Markets)",
+    "short": "FT",
+    "home": "https://www.ft.com/",
+    "rss": "https://www.ft.com/markets?format=rss",
+    "lang": "EN",
+    "color": "#e28f8f"
+  },
+  {
+    "id": "cnbc",
+    "group": "cnbc",
+    "name": "CNBC(US Top News)",
+    "short": "CNBC",
+    "home": "https://www.cnbc.com/",
+    "rss": "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+    "lang": "EN",
+    "color": "#4fa8e0"
+  },
+  {
+    "id": "forbes",
+    "group": "forbes",
+    "name": "Forbes(Business)",
+    "short": "Forbes",
+    "home": "https://www.forbes.com/",
+    "rss": "https://www.forbes.com/business/feed/",
+    "lang": "EN",
+    "color": "#e0a15a"
+  },
+  {
+    "id": "techcrunch",
+    "group": "techcrunch",
+    "name": "TechCrunch",
+    "short": "TechCrunch",
+    "home": "https://techcrunch.com/",
+    "rss": "https://techcrunch.com/feed/",
+    "lang": "EN",
+    "color": "#2dd4bf"
+  },
+  {
+    "id": "itmedia-biz",
+    "group": "itmedia-biz",
+    "name": "ITmedia ビジネスオンライン",
+    "short": "ITmediaビジネス",
+    "home": "https://www.itmedia.co.jp/business/",
+    "rss": "https://rss.itmedia.co.jp/rss/2.0/business.xml",
+    "lang": "JA",
+    "color": "#9a8cf2"
+  },
+  {
+    "id": "nikkei-biz",
+    "group": "nikkei-biz",
+    "name": "日経ビジネス電子版",
+    "short": "日経ビジネス",
+    "home": "https://business.nikkei.com/",
+    "rss": "https://business.nikkei.com/rss/sns/nb.rdf",
+    "lang": "JA",
+    "color": "#d987b8"
+  },
+  {
+    "id": "bbc-biz",
+    "group": "bbc-biz",
+    "name": "BBC News Business",
+    "short": "BBC",
+    "home": "https://www.bbc.com/news/business",
+    "rss": "http://feeds.bbci.co.uk/news/business/rss.xml",
+    "lang": "EN",
+    "color": "#b7bfd6"
+  },
+  {
+    "id": "itmedia-ai",
+    "group": "itmedia-ai",
+    "name": "ITmedia AI+",
+    "short": "ITmedia AI+",
+    "home": "https://www.itmedia.co.jp/aiplus/",
+    "rss": "https://rss.itmedia.co.jp/rss/2.0/aiplus.xml",
+    "lang": "JA",
+    "color": "#b07cf0"
+  },
+  {
+    "id": "xtech",
+    "group": "nikkei-biz",
+    "name": "日経クロステック",
+    "short": "日経xTECH",
+    "home": "https://xtech.nikkei.com/",
+    "rss": "https://xtech.nikkei.com/rss/index.rdf",
+    "lang": "JA",
+    "color": "#7ed09c",
+    "note": "nikkei-bizとgroupを共有し、日経系のフィルターチップを1つに統合している"
+  },
+  {
+    "id": "investing-jp",
+    "group": "investing-jp",
+    "name": "Investing.com(Stock Market News)",
+    "short": "Investing",
+    "home": "https://www.investing.com/",
+    "rss": "https://www.investing.com/rss/news_25.rss",
+    "lang": "EN",
+    "color": "#e07a9e"
+  },
+  {
+    "id": "marketwatch",
+    "group": "marketwatch",
+    "name": "MarketWatch",
+    "short": "MarketWatch",
+    "home": "https://www.marketwatch.com/",
+    "rss": "https://feeds.content.dowjones.io/public/rss/mw_topstories",
+    "lang": "EN",
+    "color": "#c7cf6e"
+  },
+  {
+    "id": "zuu",
+    "group": "zuu",
+    "name": "ZUU online",
+    "short": "ZUU online",
+    "home": "https://zuuonline.com/",
+    "rss": "https://zuuonline.com/feed",
+    "lang": "JA",
+    "color": "#d17ee0"
+  },
+  {
+    "id": "investing-fx",
+    "group": "investing-jp",
+    "name": "Investing.com(Forex News)",
+    "short": "Investing FX",
+    "home": "https://www.investing.com/",
+    "rss": "https://www.investing.com/rss/news_1.rss",
+    "lang": "EN",
+    "color": "#e0947a",
+    "note": "investing-jpとgroupを共有し、フィルターチップを1つに統合している"
+  },
+  {
+    "id": "investing-econ",
+    "group": "investing-jp",
+    "name": "Investing.com(Economic Indicators)",
+    "short": "Investing 指標",
+    "home": "https://www.investing.com/",
+    "rss": "https://www.investing.com/rss/news_95.rss",
+    "lang": "EN",
+    "color": "#d98f60",
+    "note": "investing-jpとgroupを共有し、フィルターチップを1つに統合している"
+  },
+  {
+    "id": "investing-comm",
+    "group": "investing-jp",
+    "name": "Investing.com(Commodities & Futures)",
+    "short": "Investing 商品",
+    "home": "https://www.investing.com/",
+    "rss": "https://www.investing.com/rss/news_11.rss",
+    "lang": "EN",
+    "color": "#c9825a",
+    "note": "investing-jpとgroupを共有し、フィルターチップを1つに統合している"
+  },
+  {
+    "id": "fxstreet",
+    "group": "fxstreet",
+    "name": "FXStreet(Forex & Commodities)",
+    "short": "FXStreet",
+    "home": "https://www.fxstreet.com/",
+    "rss": "https://www.fxstreet.com/rss/news",
+    "lang": "EN",
+    "color": "#6ab04c"
+  },
+  {
+    "id": "wsj-markets",
+    "group": "wsj-markets",
+    "name": "WSJ Markets(Dow Jones配信)",
+    "short": "WSJ Markets",
+    "home": "https://www.wsj.com/news/markets",
+    "rss": "https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",
+    "lang": "EN",
+    "color": "#9aa4b8",
+    "note": "廃止済みのWSJ公式RSSとは別ルート。既存MarketWatchと同じfeeds.content.dowjones.io配信基盤経由で取得。色は#2c2c2cから変更(ダークモードのカード背景でほぼ判読不能だったため。#9aa4b8はカード背景に対し6.9:1でWCAG AAを満たす)"
+  },
+  {
+    "id": "toyokeizai",
+    "group": "toyokeizai",
+    "name": "東洋経済オンライン",
+    "short": "東洋経済",
+    "home": "https://toyokeizai.net/",
+    "rss": "https://toyokeizai.net/list/feed/rss",
+    "lang": "JA",
+    "color": "#c94f4f"
+  },
+  {
+    "id": "diamond",
+    "group": "diamond",
+    "name": "ダイヤモンド・オンライン",
+    "short": "ダイヤモンド",
+    "home": "https://diamond.jp/",
+    "rss": "https://diamond.jp/list/feed/rss/dol",
+    "lang": "JA",
+    "color": "#5a9bd4"
+  },
+  {
+    "id": "guardian-biz",
+    "group": "guardian-biz",
+    "name": "The Guardian(Business)",
+    "short": "Guardian",
+    "home": "https://www.theguardian.com/uk/business",
+    "rss": "https://www.theguardian.com/uk/business/rss",
+    "lang": "EN",
+    "color": "#90dcbf"
+  },
+  {
+    "id": "politico",
+    "group": "politico",
+    "name": "Politico",
+    "short": "Politico",
+    "home": "https://www.politico.com/",
+    "rss": "https://rss.politico.com/politics-news.xml",
+    "lang": "EN",
+    "color": "#e0637a",
+    "note": "政治・政局ニュース(トピック絞込の政治/戦争ジャンルを補強する目的)"
+  },
+  {
+    "id": "nhk-pol",
+    "group": "nhk",
+    "sub": "政治",
+    "name": "NHKニュース(政治)",
+    "short": "NHK",
+    "home": "https://news.web.nhk/newsweb",
+    "rss": "https://news.web.nhk/n-data/conf/na/rss/cat4.xml",
+    "lang": "JA",
+    "color": "#6fa8dc",
+    "note": "nhkとgroupを共有し、フィルターチップを1つに統合している(政治ジャンルの補強)"
+  },
+  {
+    "id": "nhk-int",
+    "group": "nhk",
+    "sub": "国際",
+    "name": "NHKニュース(国際)",
+    "short": "NHK",
+    "home": "https://news.web.nhk/newsweb",
+    "rss": "https://news.web.nhk/n-data/conf/na/rss/cat6.xml",
+    "lang": "JA",
+    "color": "#6fa8dc",
+    "note": "nhkとgroupを共有し、フィルターチップを1つに統合している(戦争・地政学ジャンルの補強)"
+  },
+  {
+    "id": "bbc-world",
+    "group": "bbc-biz",
+    "name": "BBC News World",
+    "short": "BBC World",
+    "home": "https://www.bbc.com/news/world",
+    "rss": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "lang": "EN",
+    "color": "#b7bfd6",
+    "note": "bbc-bizとgroupを共有し、フィルターチップを1つに統合している(戦争・地政学ジャンルの補強)"
+  },
+  {
+    "id": "defense-news",
+    "group": "defense-news",
+    "name": "Defense News",
+    "short": "Defense News",
+    "home": "https://www.defensenews.com/",
+    "rss": "https://www.defensenews.com/arc/outboundfeeds/rss/",
+    "lang": "EN",
+    "color": "#8fae62",
+    "note": "軍事・防衛産業ニュース(戦争/地政学ジャンルと防衛関連銘柄の補強)"
+  },
+  {
+    "id": "foreign-policy",
+    "group": "foreign-policy",
+    "name": "Foreign Policy",
+    "short": "Foreign Policy",
+    "home": "https://foreignpolicy.com/",
+    "rss": "https://foreignpolicy.com/feed/",
+    "lang": "EN",
+    "color": "#e0985c",
+    "note": "外交・地政学分析(政治/戦争ジャンルの補強)"
+  },
+  {
+    "id": "oilprice",
+    "group": "oilprice",
+    "name": "OilPrice.com",
+    "short": "OilPrice",
+    "home": "https://oilprice.com/",
+    "rss": "https://oilprice.com/rss/main",
+    "lang": "EN",
+    "color": "#c9a04f",
+    "note": "原油・エネルギー専門(商品/コモディティジャンルの補強)"
+  },
+  {
+    "id": "cnbc-us",
+    "group": "cnbc",
+    "name": "CNBC(US News)",
+    "short": "CNBC",
+    "home": "https://www.cnbc.com/",
+    "rss": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15837362",
+    "lang": "EN",
+    "color": "#4fa8e0",
+    "note": "cnbcとgroupを共有しチップを1つに統合。速報性が高いカテゴリフィード(既存のTop Newsとは別ID)"
+  },
+  {
+    "id": "coindesk",
+    "group": "coindesk",
+    "name": "CoinDesk",
+    "short": "CoinDesk",
+    "home": "https://www.coindesk.com/",
+    "rss": "https://www.coindesk.com/arc/outboundfeeds/rss",
+    "lang": "EN",
+    "color": "#e3c34f",
+    "note": "暗号資産専門。末尾スラッシュ付きのフィードURLは308リダイレクトになるためスラッシュなしで取得"
+  },
+  {
+    "id": "nikkei-x",
+    "group": "nikkei-biz",
+    "name": "日本経済新聞(X公式)",
+    "short": "日経X",
+    "home": "https://x.com/nikkei",
+    "type": "x",
+    "xHandle": "nikkei",
+    "maxAgeMs": 172800000,
+    "lang": "JA",
+    "color": "#1d9bf0",
+    "note": "nikkei-bizとgroupを共有し、日経系のフィルターチップを1つに統合している。通常のRSSではなくX公式埋め込みウィジェットの公開エンドポイント(syndication.twitter.com)経由。ログイン・Cookie不要。リツイートは除外。このエンドポイントは期間に関係なく常に最新約20件(+固定ポスト)しか返さず、count/limit/tweetLimit等の件数パラメータも全て無視され、カーソル等のページング手段も存在しないことを実測で確認済み(2026-07: 複数パラメータで試行しても同一21件が返る、レスポンス内にカーソル類ゼロ、widgets.js自体にページング処理なし、旧max_position対応エンドポイントは廃止済み)。1回の取得で件数・期間を直接広げることはできないため、fetch_news.py側で毎回の取得結果を前回分と統合する方式(リンクで重複排除、maxAgeMs超過分は破棄)を代替手段として採用している。1分おきの定期実行が積み重なることでmaxAgeMs(2日)いっぱいまでカバレッジが徐々に広がっていく(起動直後やActions初回実行直後は3〜4時間分から始まる)。これ以上1回の取得で一気に遡ることは、有料の公式APIか個人アカウントのログインなしには不可能。非公開の内部エンドポイントのため仕様変更で取得できなくなる可能性がある"
+  }
+];
