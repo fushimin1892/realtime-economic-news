@@ -2,24 +2,30 @@ name: Fetch News
 
 # GitHub内蔵のscheduleはこのリポジトリでほぼ発火しない実績があるため持たない。
 # 外部cronからREST API経由でworkflow_dispatchを呼び出して起動する(READMEの「自動実行について」参照)。
+# mainへのpushでも起動し、コードの変更をサイトへ反映する。
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
 
-# リポジトリ既定のGITHUB_TOKENは読み取り専用のため、必要な権限をここで明示する。
-# contents: 生成物のコミット / issues: health_check.pyのIssue自動作成・クローズ
 permissions:
-  contents: write
-  issues: write
+  contents: read
+  issues: write # health_check.pyのIssue自動作成・クローズ
+  pages: write
+  id-token: write
 
-# 実行が重なってもpushを競合させない。待機中の実行は最新の1件だけ残る。
+# デプロイを重ねない。待機中の実行は最新の1件だけ残る。
 concurrency:
   group: fetch-news
   cancel-in-progress: false
 
 jobs:
-  fetch:
+  deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
 
@@ -32,6 +38,20 @@ jobs:
       - name: Install dependencies
         run: pip install -r scripts/requirements.txt
 
+      # news.json / status.json はコミットしないため、前回分は公開中のサイトから受け取る。
+      # 取得失敗ソースの引き継ぎ、X投稿の蓄積、死活監視の間引きに使う。
+      - name: Restore previous data from the live site
+        run: |
+          for f in news.json status.json; do
+            if curl -fsS --retry 2 "https://fushimin1892.github.io/realtime-economic-news/$f?t=$(date +%s)" -o "$f.tmp" \
+              && python -m json.tool "$f.tmp" > /dev/null; then
+              mv "$f.tmp" "$f"
+            else
+              rm -f "$f.tmp"
+              echo "::warning::$f を公開サイトから取得できませんでした"
+            fi
+          done
+
       - name: Fetch news
         run: python scripts/fetch_news.py
 
@@ -40,19 +60,10 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: python scripts/health_check.py
 
-      - name: Commit generated files
-        run: |
-          git config user.name "fushimin1892"
-          git config user.email "208667471+fushimin1892@users.noreply.github.com"
-          git add news.json status.json js/sources.js
-          if git diff --cached --quiet; then
-            echo "変更なし"
-            exit 0
-          fi
-          git commit -m "chore: update news data"
-          for attempt in 1 2 3; do
-            git pull --rebase origin main && git push origin HEAD:main && exit 0
-            echo "::warning::push失敗(${attempt}回目)。再試行します"
-            sleep 5
-          done
-          exit 1
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: .
+          retention-days: 1
+
+      - id: deployment
+        uses: actions/deploy-pages@v5

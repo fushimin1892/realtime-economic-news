@@ -1,11 +1,11 @@
 # 世界ニュース速報 — リアルタイム経済ニュースボード
 
-Financial Times、CNBC、NHK、Bloomberg、Investing.com、FXStreet など約34の投資/金融専門ソースを集約する経済ニュースボードです。RSS取得はGitHub Actions上のPythonが定期的に行い、結果を静的JSONとしてコミットする方式のため、ブラウザ側(`index.html`)はビルド不要のまま動作します。
+Financial Times、CNBC、NHK、Bloomberg、Investing.com、FXStreet など約34の投資/金融専門ソースを集約する経済ニュースボードです。RSS取得はGitHub Actions上のPythonが定期的に行い、結果を静的JSONとしてGitHub Pagesへ直接デプロイする方式のため、ブラウザ側(`index.html`)はビルド不要のまま動作します。
 
 ## アーキテクチャ
 
 1. `.github/workflows/fetch-news.yml`(GitHub Actions)が `scripts/fetch_news.py` を実行
-2. `fetch_news.py` が `sources.json` の各ソースを直接fetchし(CORSプロキシを使わないサーバー側取得)、`news.json` と `sources.js` を生成してコミット
+2. `fetch_news.py` が `sources.json` の各ソースを直接fetchし(CORSプロキシを使わないサーバー側取得)、`news.json` と `sources.js` を生成してGitHub Pagesへデプロイ(生成物はコミットしない。前回分は公開中のサイトから受け取る)
 3. ブラウザ側(`feed.js`)は `news.json` を1分おきにfetchして画面に反映するだけ(ブラウザから個別RSSやプロキシへは一切アクセスしない)
 
 ### 自動実行について
@@ -44,7 +44,7 @@ index.html / privacy.html          ページ本体(index.htmlの<head>にCSP設�
 manifest.webmanifest / sw.js       PWA対応(ホーム画面追加・オフライン表示)
 robots.txt                         検索エンジン向け設定
 sources.json                       配信元定義の正本(手編集する)
-news.json / status.json            自動生成される静的JSON(手編集しない)
+news.json / status.json            デプロイ時に生成する静的JSON(リポジトリには含めない)
 css/                                画面デザイン
   style.css / privacy.css
 js/                                 フロントエンドのロジック・データ(sw.jsのみ例外でルート直下。
@@ -183,6 +183,8 @@ scripts/requirements.txt            上記スクリプトの依存パッケー�
 ## 使い方
 
 GitHub Pagesなどのhttp(s)ホスティングに配置して公開してください。インストールやビルドは不要です(GitHub Actions側にPython実行環境が必要ですが、GitHub Actionsが自動的に用意するため利用者側の準備は不要です)。
+
+手元で試すときは、先に `python scripts/fetch_news.py` を実行して `news.json` を作ってください。
 
 注意: `index.html` を `file://` で直接開いた場合、`news.json` のfetchがブラウザのローカルファイル制限で失敗するため、ライブ更新は動作しません(キャッシュが無い初回訪問では記事0件表示になります)。動作確認・開発時はローカルHTTPサーバー経由で開いてください。
 
