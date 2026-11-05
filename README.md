@@ -4,38 +4,19 @@ Financial Times、CNBC、NHK、Bloomberg、Investing.com、FXStreet など約34�
 
 ## アーキテクチャ
 
-1. `.github/workflows/fetch-news.yml`(GitHub Actions)が `scripts/fetch_news.py` を実行
-2. `fetch_news.py` が `sources.json` の各ソースを直接fetchし(CORSプロキシを使わないサーバー側取得)、`news.json` と `sources.js` を生成してGitHub Pagesへデプロイ(生成物はコミットしない。前回分は公開中のサイトから受け取る)
-3. ブラウザ側(`feed.js`)は `news.json` を1分おきにfetchして画面に反映するだけ(ブラウザから個別RSSやプロキシへは一切アクセスしない)
+本番は Cloudflare Pages です: https://realtime-news-board.pages.dev/
 
-### 自動実行について
+1. ブラウザ側(`feed.js`)が `news.json` を1分おきにfetchして画面に反映する
+2. `functions/news.json.js`(Cloudflare Pages Functions)がリクエストに応じて `scripts/sources.json` の各ソースを取得し、60秒キャッシュして返す
+3. そのため定期実行の仕組みは不要で、サーバーの運用作業もありません
 
-`fetch-news.yml`はGitHub内蔵の`schedule`で5分おきに自動実行します。登録やトークンは不要です。GitHubの混雑時には実行が遅れることがあります。更新が滞った場合はActionsタブの実行履歴を確認してください。フロントエンド側にもサーバー更新停止を検知する仕組みがあり、`news.json`の生成時刻が15分以上更新されていない場合はステータス表示が金色に変わります。
+GitHub Pages(https://fushimin1892.github.io/realtime-economic-news/)には、本番へ転送するページ(`github-pages-redirect/`)だけを配信します。
 
-#### 外部cronの設定手順(定期実行が遅れる場合のみ)
+### コードの反映について
 
-通常は不要です。`schedule`の遅れが問題になる場合だけ、次の設定を追加します。
+**Cloudflare Pages はこのリポジトリの更新を自動では反映していません**(2026-11-05 時点で旧構成のまま稼働)。コードを変更したら、Cloudflare 側へのデプロイが別途必要です。
 
-1. GitHubの [Fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) を発行する。Repository accessは `Only select repositories` で `realtime-economic-news` のみを選び、Permissionsは `Actions: Read and write` のみを付与する。トークンはこのリポジトリにコミットせず、cronサービス側にだけ保存する。有効期限が切れると更新が止まるため、期限前に再発行する。
-2. cronサービス(例: cron-job.org)に次のHTTPリクエストを登録する。成功時の応答は `204 No Content`。
-
-   ```
-   POST https://api.github.com/repos/fushimin1892/realtime-economic-news/actions/workflows/fetch-news.yml/dispatches
-   Authorization: Bearer <発行したトークン>
-   Accept: application/vnd.github+json
-   X-GitHub-Api-Version: 2022-11-28
-   Content-Type: application/json
-
-   {"ref":"main"}
-   ```
-
-手動で実行する場合は、Actionsタブの「Fetch News」→「Run workflow」、または `gh workflow run fetch-news.yml` を使います。
-
-### 外部API死活監視について
-
-`fetch-news.yml`の中で`scripts/health_check.py`も毎回(実質1分おき)実行されますが、株価プロキシ(Cloudflare Worker)・翻訳API(MyMemory/Google翻訳)への実際のリクエストは20分に1回しか行いません(`status.json`の`checkedAt`を見て間引く)。無料枠のAPIを不必要に叩かないための間引きで、GitHub組み込みの`schedule`が信頼できない対策として既に確実に毎分動いている`fetch-news.yml`のトリガーに相乗りする形にしています。
-
-異常を検知すると`status.json`を更新してフロントエンド(`health.js`)がヘッダー下に警告バナーを出すほか、GitHubリポジトリに`health-check`ラベル付きのIssueを自動作成します(既に開いていれば連投しない)。復旧を検知すると自動でコメントを付けてIssueをクローズします。翻訳はMyMemory→Google翻訳の2段フォールバックがあるため、両方失敗した時だけ異常扱いにします(MyMemory単体のクォータ超過は正常フォールバックの範囲内のため対象外)。
+`scripts/fetch_news.py` は、`sources.json` から `js/sources.js` を再生成するときや、手元で `news.json` を作って試すときに使います。`scripts/health_check.py` は定期実行を前提とした死活監視で、現在は自動では動きません。
 
 ## ファイル構成
 

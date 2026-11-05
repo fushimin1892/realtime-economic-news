@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>世界ニュース速報(移転しました)</title>
+<link rel="canonical" href="https://realtime-news-board.pages.dev/">
+<meta http-equiv="refresh" content="3;url=https://realtime-news-board.pages.dev/">
+<script>
+  /* 同じパスのまま本番へ転送する。以前のService Workerが残らないよう先に解除する */
+  (function () {
+    var prefix = '/realtime-economic-news';
+    var path = location.pathname.indexOf(prefix) === 0 ? location.pathname.slice(prefix.length) : '/';
+    var target = 'https://realtime-news-board.pages.dev' + (path || '/') + location.search + location.hash;
+    var go = function () { location.replace(target); };
+    if (!('serviceWorker' in navigator)) return go();
+    navigator.serviceWorker.getRegistration(prefix + '/')
+      .then(function (r) { return r && r.scope.indexOf(prefix + '/') > 0 ? r.unregister() : false; })
+      .then(go, go);
+  })();
+</script>
+</head>
+<body>
+<p>移転しました。自動で移動しない場合は <a href="https://realtime-news-board.pages.dev/">新しいページ</a> を開いてください。</p>
+</body>
+</html>
