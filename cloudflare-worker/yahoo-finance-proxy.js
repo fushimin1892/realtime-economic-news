@@ -1,22 +1,37 @@
 
-const ALLOWED_ORIGIN = 'https://fushimin1892.github.io';
+const ALLOWED_ORIGINS = new Set([
+  'https://fushimin1892.github.io',
+  'https://realtime-news-board.pages.dev',
+]);
 
 const YAHOO_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 const CACHE_SECONDS = 30;
 
-function corsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+function corsHeaders(request) {
+  const headers = {
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
   };
+  const origin = request.headers.get('Origin');
+  if (ALLOWED_ORIGINS.has(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+  }
+  return headers;
 }
-function jsonResponse(body, status) {
+// Cached entries are shared across origins, so CORS headers are applied per request.
+function withCors(response, request) {
+  const result = new Response(response.body, response);
+  result.headers.delete('Access-Control-Allow-Origin');
+  Object.entries(corsHeaders(request)).forEach(([key, value]) => result.headers.set(key, value));
+  return result;
+}
+function jsonResponse(body, status, request) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders(request) },
   });
 }
 
@@ -27,15 +42,13 @@ function isValidQuery(value) {
   return typeof value === 'string' && value.length >= 1 && value.length <= 50;
 }
 
-async function proxyToYahoo(upstreamUrl, ctx) {
+async function proxyToYahoo(upstreamUrl, request, ctx) {
   const cache = caches.default;
   const cacheKey = new Request(upstreamUrl, { method: 'GET' });
 
   const cached = await cache.match(cacheKey);
   if (cached) {
-    const response = new Response(cached.body, cached);
-    Object.entries(corsHeaders()).forEach(([key, value]) => response.headers.set(key, value));
-    return response;
+    return withCors(cached, request);
   }
 
   const upstreamResponse = await fetch(upstreamUrl, {
@@ -47,13 +60,12 @@ async function proxyToYahoo(upstreamUrl, ctx) {
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': `public, max-age=${CACHE_SECONDS}`,
-      ...corsHeaders(),
     },
   });
   if (upstreamResponse.ok) {
     ctx.waitUntil(cache.put(cacheKey, response.clone()));
   }
-  return response;
+  return withCors(response, request);
 }
 
 export default {
@@ -61,32 +73,32 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders() });
+      return new Response(null, { headers: corsHeaders(request) });
     }
     if (request.method !== 'GET') {
-      return jsonResponse({ error: 'method not allowed' }, 405);
+      return jsonResponse({ error: 'method not allowed' }, 405, request);
     }
 
     if (url.pathname === '/quote') {
       const symbol = url.searchParams.get('symbol') || '';
-      if (!isValidSymbol(symbol)) return jsonResponse({ error: 'invalid symbol' }, 400);
+      if (!isValidSymbol(symbol)) return jsonResponse({ error: 'invalid symbol' }, 400, request);
       const upstreamUrl =
         'https://query1.finance.yahoo.com/v8/finance/chart/' +
         encodeURIComponent(symbol) +
         '?interval=1d&range=5d';
-      return proxyToYahoo(upstreamUrl, ctx);
+      return proxyToYahoo(upstreamUrl, request, ctx);
     }
 
     if (url.pathname === '/search') {
       const query = url.searchParams.get('q') || '';
-      if (!isValidQuery(query)) return jsonResponse({ error: 'invalid query' }, 400);
+      if (!isValidQuery(query)) return jsonResponse({ error: 'invalid query' }, 400, request);
       const upstreamUrl =
         'https://query1.finance.yahoo.com/v1/finance/search?q=' +
         encodeURIComponent(query) +
         '&quotesCount=8&newsCount=0';
-      return proxyToYahoo(upstreamUrl, ctx);
+      return proxyToYahoo(upstreamUrl, request, ctx);
     }
 
-    return jsonResponse({ error: 'not found' }, 404);
+    return jsonResponse({ error: 'not found' }, 404, request);
   },
 };

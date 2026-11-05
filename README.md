@@ -247,9 +247,9 @@ Finnhub・Twelve Dataはいずれも無料プランが米国上場銘柄限定(�
 案内を出すだけで、他の機能には一切影響しません。
 
 Worker側にはセキュリティのため、`cloudflare-worker/yahoo-finance-proxy.js` 内の
-`ALLOWED_ORIGIN`(既定値: このリポジトリのGitHub Pages URL)からのアクセスだけを許可する設定と、
+`ALLOWED_ORIGINS`(既定値: このリポジトリのGitHub Pages URLとCloudflare Pages URL)からのアクセスだけを許可する設定と、
 銘柄コード・検索キーワードの入力検証(任意のURLを中継させられる「オープンプロキシ」化の防止)を
-入れています。フォークして別ドメインで公開する場合は `ALLOWED_ORIGIN` を自分のURLに書き換えてください。
+入れています。フォークして別ドメインで公開する場合は `ALLOWED_ORIGINS` を自分のURLに書き換えてください。
 
 ## 免責事項
 
