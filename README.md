@@ -12,6 +12,23 @@ Financial Times、CNBC、NHK、Bloomberg、Investing.com、FXStreet など約34�
 
 `fetch-news.yml`はGitHub内蔵の`schedule`(cron)トリガーを持ちません。このリポジトリでは`schedule`予約実行がGitHub側でほぼ発火しない実績(観測期間中1回のみ、しかもキャンセル)だったため撤去済みです。代わりに、外部の無料cronサービス(例: cron-job.org)からGitHub REST APIの`workflow_dispatch`エンドポイントを1分おきに叩く運用にしています(このリポジトリのActions実行権限のみを持つトークンを発行して利用)。外部cronサービスが停止すると更新も止まるため、更新が滞った場合はまずそちらの稼働状況を確認してください。なお、フロントエンド側にもサーバー更新停止を検知する仕組みがあり、`news.json`の生成時刻が15分以上更新されていない場合はステータス表示が金色に変わり「サーバー側の更新が止まっている」ことを画面上で確認できます。
 
+#### 外部cronの設定手順
+
+1. GitHubの [Fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) を発行する。Repository accessは `Only select repositories` で `realtime-economic-news` のみを選び、Permissionsは `Actions: Read and write` のみを付与する。トークンはこのリポジトリにコミットせず、cronサービス側にだけ保存する。有効期限が切れると更新が止まるため、期限前に再発行する。
+2. cronサービス(例: cron-job.org)に次のHTTPリクエストを登録する。成功時の応答は `204 No Content`。
+
+   ```
+   POST https://api.github.com/repos/fushimin1892/realtime-economic-news/actions/workflows/fetch-news.yml/dispatches
+   Authorization: Bearer <発行したトークン>
+   Accept: application/vnd.github+json
+   X-GitHub-Api-Version: 2022-11-28
+   Content-Type: application/json
+
+   {"ref":"main"}
+   ```
+
+手動で実行する場合は、Actionsタブの「Fetch News」→「Run workflow」、または `gh workflow run fetch-news.yml` を使います。
+
 ### 外部API死活監視について
 
 `fetch-news.yml`の中で`scripts/health_check.py`も毎回(実質1分おき)実行されますが、株価プロキシ(Cloudflare Worker)・翻訳API(MyMemory/Google翻訳)への実際のリクエストは20分に1回しか行いません(`status.json`の`checkedAt`を見て間引く)。無料枠のAPIを不必要に叩かないための間引きで、GitHub組み込みの`schedule`が信頼できない対策として既に確実に毎分動いている`fetch-news.yml`のトリガーに相乗りする形にしています。
