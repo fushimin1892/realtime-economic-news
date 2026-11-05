@@ -1,0 +1,38 @@
+name: Deploy redirect
+
+# 本番は Cloudflare Pages(https://realtime-news-board.pages.dev/)。
+# GitHub Pages には本番へ転送するページだけを配信する。
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - github-pages-redirect/**
+      - .github/workflows/deploy-redirect.yml
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: deploy-redirect
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: github-pages-redirect
+          retention-days: 1
+
+      - id: deployment
+        uses: actions/deploy-pages@v5
