@@ -42,7 +42,7 @@ Financial Times、CNBC、NHK、Bloomberg、Investing.com、FXStreet など約34�
 ```
 index.html / privacy.html          ページ本体(index.htmlの<head>にCSP設定)
 manifest.webmanifest / sw.js       PWA対応(ホーム画面追加・オフライン表示)
-robots.txt / sitemap.xml           検索エンジン向け設定
+robots.txt                         検索エンジン向け設定
 sources.json                       配信元定義の正本(手編集する)
 news.json / status.json            自動生成される静的JSON(手編集しない)
 css/                                画面デザイン
@@ -143,7 +143,6 @@ scripts/requirements.txt            上記スクリプトの依存パッケー�
 - **SEO**: `WebSite`構造化データ(JSON-LD)を追加(既存の厳格なCSPを維持するため、'unsafe-inline'ではなく
   当該scriptタグ1個だけをsha256ハッシュで許可)。OGP(og:site_name/locale/image:width,height,type,alt等)と
   Twitter Cardの不足項目を補完。`theme-color`をライト/ダーク双方の実テーマに追従させる(手動切替にも対応)。
-  `sitemap.xml`を新設し`robots.txt`から参照。
 
 ### 意図的に見送った項目とその理由
 
