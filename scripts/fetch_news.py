@@ -37,7 +37,7 @@ X_MAX_AGE_MS = 48 * 60 * 60 * 1000  # 蓄積(merge_x_items)の保持上限。単
 # 前回分と統合して蓄積する」(merge_x_items)方式を、直接取得できない場合の代替手段として採用している。
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SOURCES_JSON_PATH = REPO_ROOT / "sources.json"
+SOURCES_JSON_PATH = REPO_ROOT / "scripts" / "sources.json"
 SOURCES_JS_PATH = REPO_ROOT / "js" / "sources.js"
 NEWS_JSON_PATH = REPO_ROOT / "news.json"
 

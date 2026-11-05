@@ -43,7 +43,7 @@ Financial Times、CNBC、NHK、Bloomberg、Investing.com、FXStreet など約34�
 index.html / privacy.html          ページ本体(index.htmlの<head>にCSP設定)
 manifest.webmanifest / sw.js       PWA対応(ホーム画面追加・オフライン表示)
 robots.txt                         検索エンジン向け設定
-sources.json                       配信元定義の正本(手編集する)
+scripts/sources.json               配信元定義の正本(手編集する)
 news.json / status.json            デプロイ時に生成する静的JSON(リポジトリには含めない)
 css/                                画面デザイン
   style.css / privacy.css

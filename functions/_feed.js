@@ -1,4 +1,4 @@
-import SOURCES from '../sources.json';
+import SOURCES from '../scripts/sources.json';
 
 export const MAX_ITEMS_PER_SOURCE = 100;
 const DESC_MAX_LEN = 220;
