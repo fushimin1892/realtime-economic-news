@@ -1,14 +1,16 @@
 name: Fetch News
 
-# GitHub内蔵のscheduleはこのリポジトリでほぼ発火しない実績があるため持たない。
-# 外部cronからREST API経由でworkflow_dispatchを呼び出して起動する(READMEの「自動実行について」参照)。
-# mainへのpushでも起動し、コードの変更をサイトへ反映する。
+# 5分おきに自動で実行する(READMEの「自動実行について」参照)。
+# mainへのpushでも起動し、コードの変更をサイトへ反映する。手動でも実行できる。
 on:
+  schedule:
+    - cron: "2-59/5 * * * *"
   workflow_dispatch:
   push:
     branches: [main]
 
 permissions:
+  actions: write # 定期実行が自動で無効化されないようにする
   contents: read
   issues: write # health_check.pyのIssue自動作成・クローズ
   pages: write
@@ -27,6 +29,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # 変更のない状態が60日続くとGitHubが定期実行を止めるため、毎回有効にしておく
+      - name: Keep the schedule enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/fetch-news.yml/enable" || echo "::warning::定期実行の有効化に失敗しました"
+
       - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v7

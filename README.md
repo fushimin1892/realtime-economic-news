@@ -10,9 +10,11 @@ Financial Times、CNBC、NHK、Bloomberg、Investing.com、FXStreet など約34�
 
 ### 自動実行について
 
-`fetch-news.yml`はGitHub内蔵の`schedule`(cron)トリガーを持ちません。このリポジトリでは`schedule`予約実行がGitHub側でほぼ発火しない実績(観測期間中1回のみ、しかもキャンセル)だったため撤去済みです。代わりに、外部の無料cronサービス(例: cron-job.org)からGitHub REST APIの`workflow_dispatch`エンドポイントを1分おきに叩く運用にしています(このリポジトリのActions実行権限のみを持つトークンを発行して利用)。外部cronサービスが停止すると更新も止まるため、更新が滞った場合はまずそちらの稼働状況を確認してください。なお、フロントエンド側にもサーバー更新停止を検知する仕組みがあり、`news.json`の生成時刻が15分以上更新されていない場合はステータス表示が金色に変わり「サーバー側の更新が止まっている」ことを画面上で確認できます。
+`fetch-news.yml`はGitHub内蔵の`schedule`で5分おきに自動実行します。登録やトークンは不要です。GitHubの混雑時には実行が遅れることがあります。更新が滞った場合はActionsタブの実行履歴を確認してください。フロントエンド側にもサーバー更新停止を検知する仕組みがあり、`news.json`の生成時刻が15分以上更新されていない場合はステータス表示が金色に変わります。
 
-#### 外部cronの設定手順
+#### 外部cronの設定手順(定期実行が遅れる場合のみ)
+
+通常は不要です。`schedule`の遅れが問題になる場合だけ、次の設定を追加します。
 
 1. GitHubの [Fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) を発行する。Repository accessは `Only select repositories` で `realtime-economic-news` のみを選び、Permissionsは `Actions: Read and write` のみを付与する。トークンはこのリポジトリにコミットせず、cronサービス側にだけ保存する。有効期限が切れると更新が止まるため、期限前に再発行する。
 2. cronサービス(例: cron-job.org)に次のHTTPリクエストを登録する。成功時の応答は `204 No Content`。
@@ -102,7 +104,7 @@ scripts/requirements.txt            上記スクリプトの依存パッケー�
 
 ## 主な機能
 
-- **横断収集**: 上記ソースを1分おきにGitHub Actionsが再取得し、ブラウザ側も1分おきにその結果(`news.json`)を再取得。過去4日以内に公開された記事を自動表示(ソースによっては`sources.json`の`maxAgeMs`で個別に上限を短縮)
+- **横断収集**: 上記ソースを5分おきにGitHub Actionsが再取得し、ブラウザ側も1分おきにその結果(`news.json`)を再取得。過去4日以内に公開された記事を自動表示(ソースによっては`sources.json`の`maxAgeMs`で個別に上限を短縮)
 - **英語記事の日本語表示**: MyMemory(利用不可時はGoogle翻訳)による自動翻訳。原文見出しもあわせて確認可能
 - **関心トピックで絞り込み**: 投資・金融・政治・戦争/地政学関連のキーワードをワンクリックでON/OFF切替(既定はON)
 - **簡易センチメント表示**: 見出し・要約内の頻出語から上向き/下向きの傾向を▲/▼で表示
